@@ -2,9 +2,9 @@ import logging
 from typing import Optional
 
 import numpy as np
-from PyQt5 import QtGui
-from PyQt5.QtCore import QPoint
-from PyQt5.QtCore import Qt as Keys
+from PySide6 import QtCore, QtGui
+from PySide6.QtCore import QPoint
+from PySide6.QtCore import Qt as Keys
 
 from ..definitions import BBOX_SIDES, Colors, Context, LabelingMode
 from ..io.labels.config import LabelConfig
@@ -58,7 +58,7 @@ class Controller:
         """Function collection called during each event loop iteration."""
         self.set_crosshair()
         self.set_selected_side()
-        self.view.gl_widget.updateGL()
+        self.view.gl_widget.update()
 
     # POINT CLOUD METHODS
     def next_pcd(self, save: bool = True) -> None:
@@ -132,6 +132,7 @@ class Controller:
                 self.bbox_controller.get_active_bbox(),  # type: ignore
                 self.view.gl_widget.modelview,
                 self.view.gl_widget.projection,
+                self.view.gl_widget.viewport,
             )
         if (
             self.selected_side
@@ -154,18 +155,22 @@ class Controller:
     # EVENT PROCESSING
     def mouse_clicked(self, a0: QtGui.QMouseEvent) -> None:
         """Triggers actions when the user clicks the mouse."""
-        self.last_cursor_pos = a0.pos()
+        self.last_cursor_pos = a0.position().toPoint()
 
         if (
             self.drawing_mode.is_active()
-            and (a0.buttons() & Keys.LeftButton)
+            and (a0.buttons() & Keys.MouseButton.LeftButton)
             and (not self.ctrl_pressed)
         ):
-            self.drawing_mode.register_point(a0.x(), a0.y(), correction=True)
+            self.drawing_mode.register_point(
+                a0.position().x(), a0.position().y(), correction=True
+            )
 
         elif self.align_mode.is_active and (not self.ctrl_pressed):
             self.align_mode.register_point(
-                self.view.gl_widget.get_world_coords(a0.x(), a0.y(), correction=False)
+                self.view.gl_widget.get_world_coords(
+                    a0.position().x(), a0.position().y(), correction=False
+                )
             )
 
         elif self.selected_side:
@@ -173,46 +178,50 @@ class Controller:
 
     def mouse_double_clicked(self, a0: QtGui.QMouseEvent) -> None:
         """Triggers actions when the user double clicks the mouse."""
-        self.bbox_controller.select_bbox_by_ray(a0.x(), a0.y())
+        self.bbox_controller.select_bbox_by_ray(a0.position().x(), a0.position().y())
 
     def mouse_move_event(self, a0: QtGui.QMouseEvent) -> None:
         """Triggers actions when the user moves the mouse."""
-        self.curr_cursor_pos = a0.pos()  # Updates the current mouse cursor position
+        self.curr_cursor_pos = (
+            a0.position().toPoint()
+        )  # Updates the current mouse cursor position
 
         # Methods that use absolute cursor position
         if self.drawing_mode.is_active() and (not self.ctrl_pressed):
             self.drawing_mode.register_point(
-                a0.x(), a0.y(), correction=True, is_temporary=True
+                a0.position().x(), a0.position().y(), correction=True, is_temporary=True
             )
 
         elif self.align_mode.is_active and (not self.ctrl_pressed):
             self.align_mode.register_tmp_point(
-                self.view.gl_widget.get_world_coords(a0.x(), a0.y(), correction=False)
+                self.view.gl_widget.get_world_coords(
+                    a0.position().x(), a0.position().y(), correction=False
+                )
             )
 
         if self.last_cursor_pos:
             dx = (
-                self.last_cursor_pos.x() - a0.x()
+                self.last_cursor_pos.x() - a0.position().x()
             ) / 5  # Calculate relative movement from last click position
-            dy = (self.last_cursor_pos.y() - a0.y()) / 5
+            dy = (self.last_cursor_pos.y() - a0.position().y()) / 5
 
             if (
                 self.ctrl_pressed
                 and (not self.drawing_mode.is_active())
                 and (not self.align_mode.is_active)
             ):
-                if a0.buttons() & Keys.LeftButton:  # bbox rotation
+                if a0.buttons() & Keys.MouseButton.LeftButton:  # bbox rotation
                     self.bbox_controller.rotate_with_mouse(-dx, -dy)
-                elif a0.buttons() & Keys.RightButton:  # bbox translation
+                elif a0.buttons() & Keys.MouseButton.RightButton:  # bbox translation
                     new_center = self.view.gl_widget.get_world_coords(
-                        a0.x(), a0.y(), correction=True
+                        a0.position().x(), a0.position().y(), correction=True
                     )
                     self.bbox_controller.set_center(*new_center)  # absolute positioning
             else:
-                if a0.buttons() & Keys.LeftButton:  # pcd rotation
+                if a0.buttons() & Keys.MouseButton.LeftButton:  # pcd rotation
                     self.pcd_manager.rotate_around_x(dy)
                     self.pcd_manager.rotate_around_z(dx)
-                elif a0.buttons() & Keys.RightButton:  # pcd translation
+                elif a0.buttons() & Keys.MouseButton.RightButton:  # pcd translation
                     self.pcd_manager.translate_along_x(dx)
                     self.pcd_manager.translate_along_y(dy)
 
@@ -222,7 +231,7 @@ class Controller:
                     self.side_mode = False
                 else:
                     self.scroll_mode = False
-        self.last_cursor_pos = a0.pos()
+        self.last_cursor_pos = a0.position().toPoint()
 
     def mouse_scroll_event(self, a0: QtGui.QWheelEvent) -> None:
         """Triggers actions when the user scrolls the mouse wheel."""
@@ -247,7 +256,7 @@ class Controller:
         """Triggers actions when the user presses a key."""
 
         # Reset position to intial value
-        if a0.key() == Keys.Key_Control:
+        if a0.key() == Keys.Key.Key_Control:
             self.ctrl_pressed = True
             self.view.status_manager.set_message(
                 "Hold right mouse button to translate or left mouse button to rotate "
@@ -255,18 +264,18 @@ class Controller:
                 context=Context.CONTROL_PRESSED,
             )
         # Reset point cloud pose to intial rotation and translation
-        elif a0.key() in [Keys.Key_P, Keys.Key_Home]:
+        elif a0.key() in [Keys.Key.Key_P, Keys.Key.Key_Home]:
             self.pcd_manager.reset_transformations()
             logging.info("Reseted position to default.")
 
-        elif a0.key() == Keys.Key_Delete:  # Delete active bbox
+        elif a0.key() == Keys.Key.Key_Delete:  # Delete active bbox
             self.bbox_controller.delete_current_bbox()
 
         # Save labels to file
-        elif a0.key() == Keys.Key_S and self.ctrl_pressed:
+        elif a0.key() == Keys.Key.Key_S and self.ctrl_pressed:
             self.save()
 
-        elif a0.key() == Keys.Key_Escape:
+        elif a0.key() == Keys.Key.Key_Escape:
             if self.drawing_mode.is_active():
                 self.drawing_mode.reset()
                 logging.info("Resetted drawn points!")
@@ -275,79 +284,79 @@ class Controller:
                 logging.info("Resetted selected points!")
 
         # BBOX MANIPULATION
-        elif a0.key() == Keys.Key_Z:
+        elif a0.key() == Keys.Key.Key_Z:
             # z rotate counterclockwise
             self.bbox_controller.rotate_around_z()
-        elif a0.key() == Keys.Key_X:
+        elif a0.key() == Keys.Key.Key_X:
             # z rotate clockwise
             self.bbox_controller.rotate_around_z(clockwise=True)
-        elif a0.key() == Keys.Key_C:
+        elif a0.key() == Keys.Key.Key_C:
             # y rotate counterclockwise
             self.bbox_controller.rotate_around_y()
-        elif a0.key() == Keys.Key_V:
+        elif a0.key() == Keys.Key.Key_V:
             # y rotate clockwise
             self.bbox_controller.rotate_around_y(clockwise=True)
-        elif a0.key() == Keys.Key_B:
+        elif a0.key() == Keys.Key.Key_B:
             # x rotate counterclockwise
             self.bbox_controller.rotate_around_x()
-        elif a0.key() == Keys.Key_N:
+        elif a0.key() == Keys.Key.Key_N:
             # x rotate clockwise
             self.bbox_controller.rotate_around_x(clockwise=True)
-        elif a0.key() == Keys.Key_W:
+        elif a0.key() == Keys.Key.Key_W:
             # move backward
             self.bbox_controller.translate_along_y()
-        elif a0.key() == Keys.Key_S:
+        elif a0.key() == Keys.Key.Key_S:
             # move forward
             self.bbox_controller.translate_along_y(forward=True)
-        elif a0.key() == Keys.Key_A:
+        elif a0.key() == Keys.Key.Key_A:
             # move left
             self.bbox_controller.translate_along_x(left=True)
-        elif a0.key() == Keys.Key_D:
+        elif a0.key() == Keys.Key.Key_D:
             # move right
             self.bbox_controller.translate_along_x()
-        elif a0.key() == Keys.Key_Q:
+        elif a0.key() == Keys.Key.Key_Q:
             # move up
             self.bbox_controller.translate_along_z()
-        elif a0.key() == Keys.Key_E:
+        elif a0.key() == Keys.Key.Key_E:
             # move down
             self.bbox_controller.translate_along_z(down=True)
 
         # BBOX Scaling
-        elif a0.key() == Keys.Key_I:
+        elif a0.key() == Keys.Key.Key_I:
             # increase length
             self.bbox_controller.scale_along_length()
-        elif a0.key() == Keys.Key_O:
+        elif a0.key() == Keys.Key.Key_O:
             # decrease length
             self.bbox_controller.scale_along_length(decrease=True)
-        elif a0.key() == Keys.Key_K:
+        elif a0.key() == Keys.Key.Key_K:
             # increase width
             self.bbox_controller.scale_along_width()
-        elif a0.key() == Keys.Key_L:
+        elif a0.key() == Keys.Key.Key_L:
             # decrease width
             self.bbox_controller.scale_along_width(decrease=True)
-        elif a0.key() == Keys.Key_Comma:
+        elif a0.key() == Keys.Key.Key_Comma:
             # increase height
             self.bbox_controller.scale_along_height()
-        elif a0.key() == Keys.Key_Period:
+        elif a0.key() == Keys.Key.Key_Period:
             # decrease height
             self.bbox_controller.scale_along_height(decrease=True)
 
-        elif a0.key() in [Keys.Key_R, Keys.Key_Left]:
+        elif a0.key() in [Keys.Key.Key_R, Keys.Key.Key_Left]:
             # load previous sample
             self.prev_pcd()
-        elif a0.key() in [Keys.Key_F, Keys.Key_Right]:
+        elif a0.key() in [Keys.Key.Key_F, Keys.Key.Key_Right]:
             # load next sample
             self.next_pcd()
-        elif a0.key() in [Keys.Key_T, Keys.Key_Up]:
+        elif a0.key() in [Keys.Key.Key_T, Keys.Key.Key_Up]:
             # select previous bbox
             self.select_relative_bbox(-1)
-        elif a0.key() in [Keys.Key_G, Keys.Key_Down]:
+        elif a0.key() in [Keys.Key.Key_G, Keys.Key.Key_Down]:
             # select previous bbox
             self.select_relative_bbox(1)
-        elif a0.key() == Keys.Key_Y:
+        elif a0.key() == Keys.Key.Key_Y:
             # change bbox class to previous available class
             self.select_relative_class(-1)
-        elif a0.key() == Keys.Key_H:
+        elif a0.key() == Keys.Key.Key_H:
             # change bbox class to next available class
             self.select_relative_class(1)
         elif a0.key() in list(range(49, 58)):
@@ -374,7 +383,7 @@ class Controller:
 
     def key_release_event(self, a0: QtGui.QKeyEvent) -> None:
         """Triggers actions when the user releases a key."""
-        if a0.key() == Keys.Key_Control:
+        if a0.key() == Keys.Key.Key_Control:
             self.ctrl_pressed = False
             self.view.status_manager.clear_message(Context.CONTROL_PRESSED)
 

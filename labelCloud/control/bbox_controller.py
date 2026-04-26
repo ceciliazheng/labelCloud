@@ -336,13 +336,14 @@ class BoundingBoxController(object):
         new_height = height + step
         active_bbox.set_dimensions(length, width, new_height)
 
-    def select_bbox_by_ray(self, x: int, y: int) -> None:
+    def select_bbox_by_ray(self, x: float, y: float) -> None:
         intersected_bbox_id = oglhelper.get_intersected_bboxes(
             x,
             y,
             self.bboxes,
             self.view.gl_widget.modelview,
             self.view.gl_widget.projection,
+            self.view.gl_widget.viewport,
         )
         if intersected_bbox_id is not None:
             self.set_active_bbox(intersected_bbox_id)

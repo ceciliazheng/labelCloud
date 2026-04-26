@@ -6,19 +6,19 @@ import traceback
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Set
 
-import pkg_resources
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtCore import QEvent
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import (
-    QAction,
-    QActionGroup,
+import importlib_resources
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import QEvent
+from PySide6.QtGui import QAction, QActionGroup, QPixmap
+from PySide6.QtWidgets import (
     QColorDialog,
     QFileDialog,
     QInputDialog,
     QLabel,
     QMessageBox,
 )
+
+from ..utils.qt_loader import loadUi
 
 from ..control.config_manager import config
 from ..definitions import Color3f, LabelingMode
@@ -111,17 +111,31 @@ STYLESHEET = """
     QComboBox#current_class_dropdown{{
         selection-background-color: #0000FF;
     }}
+
+    QProgressBar {{
+        border: 1px solid #c0c0c0;
+        border-radius: 3px;
+        text-align: center;
+    }}
+
+    QProgressBar::chunk {{
+        background-color: #0071bc;
+        border-radius: 3px;
+    }}
 """
 
 
 class GUI(QtWidgets.QMainWindow):
     def __init__(self, control: "Controller") -> None:
         super(GUI, self).__init__()
-        uic.loadUi(
-            pkg_resources.resource_filename(
-                "labelCloud.resources.interfaces", "interface.ui"
+        loadUi(
+            str(
+                importlib_resources.files("labelCloud.resources.interfaces").joinpath(
+                    "interface.ui"
+                )
             ),
             self,
+            customWidgets={"GLWidget": GLWidget},
         )
         self.resize(1500, 900)
         self.setWindowTitle("labelCloud")
@@ -139,23 +153,23 @@ class GUI(QtWidgets.QMainWindow):
 
         # MENU BAR
         # File
-        self.act_set_pcd_folder: QtWidgets.QAction
-        self.act_set_label_folder: QtWidgets.QAction
+        self.act_set_pcd_folder: QAction
+        self.act_set_label_folder: QAction
 
         # Labels
-        self.act_delete_all_labels: QtWidgets.QAction
+        self.act_delete_all_labels: QAction
         self.act_set_default_class: QtWidgets.QMenu
         self.actiongroup_default_class = QActionGroup(self.act_set_default_class)
-        self.act_propagate_labels: QtWidgets.QAction
+        self.act_propagate_labels: QAction
 
         # Settings
-        self.act_z_rotation_only: QtWidgets.QAction
-        self.act_color_with_label: QtWidgets.QAction
-        self.act_show_floor: QtWidgets.QAction
-        self.act_show_orientation: QtWidgets.QAction
-        self.act_save_perspective: QtWidgets.QAction
-        self.act_align_pcd: QtWidgets.QAction
-        self.act_change_settings: QtWidgets.QAction
+        self.act_z_rotation_only: QAction
+        self.act_color_with_label: QAction
+        self.act_show_floor: QAction
+        self.act_show_orientation: QAction
+        self.act_save_perspective: QAction
+        self.act_align_pcd: QAction
+        self.act_change_settings: QAction
 
         # STATUS BAR
         self.status_bar: QtWidgets.QStatusBar
@@ -202,10 +216,10 @@ class GUI(QtWidgets.QMainWindow):
         self.button_assign_label: QtWidgets.QPushButton
 
         # label list actions
-        # self.act_rename_class = QtWidgets.QAction("Rename class") #TODO: Implement!
-        self.act_change_class_color = QtWidgets.QAction("Change class color")
-        self.act_delete_class = QtWidgets.QAction("Delete label")
-        self.act_crop_pointcloud_inside = QtWidgets.QAction("Save points inside as")
+        # self.act_rename_class = QAction("Rename class") #TODO: Implement!
+        self.act_change_class_color = QAction("Change class color")
+        self.act_delete_class = QAction("Delete label")
+        self.act_crop_pointcloud_inside = QAction("Save points inside as")
         self.label_list.addActions(
             [
                 self.act_change_class_color,
@@ -213,7 +227,9 @@ class GUI(QtWidgets.QMainWindow):
                 self.act_crop_pointcloud_inside,
             ]
         )
-        self.label_list.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
+        self.label_list.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.ActionsContextMenu
+        )
 
         # BOUNDING BOX PARAMETER EDITS
         self.edit_pos_x: QtWidgets.QLineEdit
@@ -417,34 +433,36 @@ class GUI(QtWidgets.QMainWindow):
     # Collect, filter and forward events to viewer
     def eventFilter(self, event_object, event) -> bool:
         # Keyboard Events
-        if (event.type() == QEvent.KeyPress) and event_object in [
+        if (event.type() == QEvent.Type.KeyPress) and event_object in [
             self,
             self.label_list,  # otherwise steals focus for keyboard shortcuts
         ]:
             self.controller.key_press_event(event)
             self.update_bbox_stats(self.controller.bbox_controller.get_active_bbox())
             return True  # TODO: Recheck pyqt behaviour
-        elif event.type() == QEvent.KeyRelease:
+        elif event.type() == QEvent.Type.KeyRelease:
             self.controller.key_release_event(event)
 
         # Mouse Events
-        elif (event.type() == QEvent.MouseMove) and (event_object == self.gl_widget):
+        elif (event.type() == QEvent.Type.MouseMove) and (
+            event_object == self.gl_widget
+        ):
             self.controller.mouse_move_event(event)
             self.update_bbox_stats(self.controller.bbox_controller.get_active_bbox())
-        elif (event.type() == QEvent.Wheel) and (event_object == self.gl_widget):
+        elif (event.type() == QEvent.Type.Wheel) and (event_object == self.gl_widget):
             self.controller.mouse_scroll_event(event)
             self.update_bbox_stats(self.controller.bbox_controller.get_active_bbox())
-        elif event.type() == QEvent.MouseButtonDblClick and (
+        elif event.type() == QEvent.Type.MouseButtonDblClick and (
             event_object == self.gl_widget
         ):
             self.controller.mouse_double_clicked(event)
             return True
-        elif (event.type() == QEvent.MouseButtonPress) and (
+        elif (event.type() == QEvent.Type.MouseButtonPress) and (
             event_object == self.gl_widget
         ):
             self.controller.mouse_clicked(event)
             self.update_bbox_stats(self.controller.bbox_controller.get_active_bbox())
-        elif (event.type() == QEvent.MouseButtonPress) and (
+        elif (event.type() == QEvent.Type.MouseButtonPress) and (
             event_object != self.current_class_dropdown
         ):
             self.current_class_dropdown.clearFocus()
@@ -483,7 +501,7 @@ class GUI(QtWidgets.QMainWindow):
                     f"Could not find a related image in the image folder ({image_folder}).\n"
                     "Check your path to the folder or if an image for this point cloud exists."
                 ),
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
             )
         else:
             image_path = image_folder.joinpath(image_name)
@@ -497,7 +515,7 @@ class GUI(QtWidgets.QMainWindow):
         self, pcd_folder: Path, pcd_extensions: Set[str]
     ) -> None:
         msg = QMessageBox(self)
-        msg.setIcon(QMessageBox.Warning)
+        msg.setIcon(QMessageBox.Icon.Warning)
         msg.setText(
             "<b>labelCloud could not find any valid point cloud files inside the "
             "specified folder.</b>"
@@ -508,7 +526,7 @@ class GUI(QtWidgets.QMainWindow):
             f"cloud file formats:\n {', '.join(pcd_extensions)}."
         )
         msg.setWindowTitle("No Point Clouds Found")
-        msg.exec_()
+        msg.exec()
 
     # VISUALIZATION METHODS
 
@@ -600,7 +618,7 @@ class GUI(QtWidgets.QMainWindow):
             QFileDialog.getExistingDirectory(
                 self,
                 "Change Point Cloud Folder",
-                directory=config.get("FILE", "pointcloud_folder"),
+                dir=config.get("FILE", "pointcloud_folder"),
             )
         )
         if not path_to_folder.is_dir():
@@ -616,7 +634,7 @@ class GUI(QtWidgets.QMainWindow):
             QFileDialog.getExistingDirectory(
                 self,
                 "Change Label Folder",
-                directory=config.get("FILE", "label_folder"),
+                dir=config.get("FILE", "label_folder"),
             )
         )
         if not path_to_folder.is_dir():
@@ -679,10 +697,11 @@ class GUI(QtWidgets.QMainWindow):
         make_filter = " ".join(["*" + extension for extension in extensions])
         file_filter = f"Point Cloud File ({make_filter})"
         file_name, _ = QFileDialog.getSaveFileName(
+            None,  # type: ignore
             caption="Select a file name to save the point cloud",
-            directory=str(pointcloud.path.parent),
+            dir=str(pointcloud.path.parent),
             filter=file_filter,
-            initialFilter=file_filter,
+            selectedFilter=file_filter,
         )
         if file_name == "":
             logging.warning("No file path provided. Ignored.")
@@ -697,6 +716,6 @@ class GUI(QtWidgets.QMainWindow):
             msg.setWindowTitle("Failed to save a point cloud")
             msg.setText(e.__class__.__name__)
             msg.setInformativeText(traceback.format_exc())
-            msg.setIcon(QMessageBox.Critical)
-            msg.setStandardButtons(QMessageBox.Cancel)
-            msg.exec_()
+            msg.setIcon(QMessageBox.Icon.Critical)
+            msg.setStandardButtons(QMessageBox.StandardButton.Cancel)
+            msg.exec()

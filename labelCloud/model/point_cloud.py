@@ -6,7 +6,7 @@ from typing import List, Optional, Tuple, cast
 import numpy as np
 import numpy.typing as npt
 import OpenGL.GL as GL
-from PyQt5.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 
 from labelCloud.io.labels.config import LabelConfig
 
@@ -202,11 +202,13 @@ class PointCloud(object):
                 default label `{LabelConfig().get_default_class_name()}` of id `{LabelConfig().default}`?
                 """
             )
-            msg.setIcon(QMessageBox.Critical)
-            msg.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+            msg.setIcon(QMessageBox.Icon.Critical)
+            msg.setStandardButtons(
+                QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Ok
+            )
 
             msg.accepted.connect(self.replace_missing_labels_with_default)
-            msg.exec_()
+            msg.exec()
 
     def replace_missing_labels_with_default(self):
         unique_label_ids = set(np.unique(self.labels))

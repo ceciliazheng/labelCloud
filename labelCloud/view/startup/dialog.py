@@ -1,11 +1,10 @@
 import traceback
 
-import pkg_resources
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (
+import importlib_resources
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
     QComboBox,
-    QDesktopWidget,
     QDialog,
     QDialogButtonBox,
     QHBoxLayout,
@@ -34,12 +33,14 @@ class StartupDialog(QDialog):
         self.parent_gui = parent
 
         self.setWindowTitle("Welcome to labelCloud")
-        screen_size = QDesktopWidget().availableGeometry(self).size()
+        screen_size = self.screen().availableGeometry().size()
         self.resize(screen_size * 0.5)
         self.setWindowIcon(
             QIcon(
-                pkg_resources.resource_filename(
-                    "labelCloud.resources.icons", "labelCloud.ico"
+                str(
+                    importlib_resources.files("labelCloud.resources.icons").joinpath(
+                        "labelCloud.ico"
+                    )
                 )
             )
         )
@@ -47,7 +48,7 @@ class StartupDialog(QDialog):
 
         main_layout = QVBoxLayout()
         main_layout.setSpacing(15)
-        main_layout.setAlignment(Qt.AlignTop)
+        main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.setLayout(main_layout)
 
         # 1. Row: Selection of labeling mode via checkable buttons
@@ -61,7 +62,7 @@ class StartupDialog(QDialog):
         self.add_default_and_export_format(main_layout)
 
         # 4. Row: Buttons to save or cancel
-        self.buttonBox = QDialogButtonBox(QDialogButtonBox.Save)
+        self.buttonBox = QDialogButtonBox(QDialogButtonBox.StandardButton.Save)
         self.buttonBox.accepted.connect(self.save)
         self.buttonBox.rejected.connect(self.reject)
 
@@ -138,10 +139,12 @@ class StartupDialog(QDialog):
 
         parent_layout.addWidget(QLabel("Change class labels:"))
 
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(self.label_list)
-        scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        scroll_area.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
 
         parent_layout.addWidget(scroll_area)
 
@@ -209,4 +212,4 @@ class StartupDialog(QDialog):
         msg.setStandardButtons(buttons)
         msg.setDefaultButton(QMessageBox.Cancel)
 
-        msg.exec_()
+        msg.exec()

@@ -1,7 +1,7 @@
 from typing import List, Union
 
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QHBoxLayout, QPushButton, QWidget
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 
 from ...definitions import LabelingMode
 from ...definitions.label_formats.base import BaseLabelFormat
@@ -9,7 +9,7 @@ from ...io.labels.config import LabelConfig
 
 
 class SelectLabelingMode(QWidget):
-    changed = pyqtSignal(LabelingMode)  # class_name, was_added
+    changed = Signal(LabelingMode)  # class_name, was_added
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

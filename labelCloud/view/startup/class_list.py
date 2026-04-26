@@ -1,10 +1,10 @@
 import random
 from typing import List, Optional
 
-import pkg_resources
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import (
+import importlib_resources
+from PySide6.QtCore import Signal
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtWidgets import (
     QButtonGroup,
     QHBoxLayout,
     QLineEdit,
@@ -20,7 +20,7 @@ from .color_button import ColorButton
 
 
 class ClassList(QWidget):
-    changed = pyqtSignal()
+    changed = Signal()
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -93,8 +93,10 @@ class ClassList(QWidget):
         label_delete = QPushButton(
             icon=QIcon(
                 QPixmap(
-                    pkg_resources.resource_filename(
-                        "labelCloud.resources.icons", "delete-outline.svg"
+                    str(
+                        importlib_resources.files(
+                            "labelCloud.resources.icons"
+                        ).joinpath("delete-outline.svg")
                     )
                 )
             ),
