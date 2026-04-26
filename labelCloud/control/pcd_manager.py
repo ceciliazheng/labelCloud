@@ -82,10 +82,8 @@ class PointCloudManger(object):
             )
             self.pointcloud = PointCloud.from_file(
                 Path(
-                    str(
-                        importlib_resources.files("labelCloud.resources").joinpath(
-                            "labelCloud_icon.pcd"
-                        )
+                    importlib_resources.files("labelCloud.resources").joinpath(
+                        "labelCloud_icon.pcd"
                     )
                 )
             )

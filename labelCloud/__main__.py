@@ -47,36 +47,28 @@ def setup_example_project() -> None:
 
     # Copy example files
     shutil.copy(
-        str(
-            importlib_resources.files("labelCloud.resources").joinpath(
-                "default_config.ini"
-            )
+        importlib_resources.files("labelCloud.resources").joinpath(
+            "default_config.ini"
         ),
-        str(cwdir.joinpath("config.ini")),
+        cwdir.joinpath("config.ini"),
     )
     shutil.copy(
-        str(
-            importlib_resources.files("labelCloud.resources.examples").joinpath(
-                "exemplary.ply"
-            )
+        importlib_resources.files("labelCloud.resources.examples").joinpath(
+            "exemplary.ply"
         ),
-        str(pcd_folder.joinpath("exemplary.ply")),
+        pcd_folder.joinpath("exemplary.ply"),
     )
     shutil.copy(
-        str(
-            importlib_resources.files("labelCloud.resources").joinpath(
-                "default_classes.json"
-            )
+        importlib_resources.files("labelCloud.resources").joinpath(
+            "default_classes.json"
         ),
-        str(label_folder.joinpath("_classes.json")),
+        label_folder.joinpath("_classes.json"),
     )
     shutil.copy(
-        str(
-            importlib_resources.files("labelCloud.resources.examples").joinpath(
-                "exemplary.json"
-            )
+        importlib_resources.files("labelCloud.resources.examples").joinpath(
+            "exemplary.json"
         ),
-        str(label_folder.joinpath("exemplary.json")),
+        label_folder.joinpath("exemplary.json"),
     )
     logging.info(
         f"Setup example project in {cwdir}:"

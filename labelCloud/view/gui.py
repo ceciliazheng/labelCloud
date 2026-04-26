@@ -129,10 +129,8 @@ class GUI(QtWidgets.QMainWindow):
     def __init__(self, control: "Controller") -> None:
         super(GUI, self).__init__()
         loadUi(
-            str(
-                importlib_resources.files("labelCloud.resources.interfaces").joinpath(
-                    "interface.ui"
-                )
+            importlib_resources.files("labelCloud.resources.interfaces").joinpath(
+                "interface.ui"
             ),
             self,
             customWidgets={"GLWidget": GLWidget},

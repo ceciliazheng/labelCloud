@@ -17,10 +17,8 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.parent_gui = parent
         loadUi(
-            str(
-                importlib_resources.files("labelCloud.resources.interfaces").joinpath(
-                    "settings_interface.ui"
-                )
+            importlib_resources.files("labelCloud.resources.interfaces").joinpath(
+                "settings_interface.ui"
             ),
             self,
         )

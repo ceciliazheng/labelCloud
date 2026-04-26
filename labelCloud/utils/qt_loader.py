@@ -20,7 +20,7 @@ class UiLoader(QUiLoader):
 
 def loadUi(ui_path, baseinstance, customWidgets=None):
     loader = UiLoader(baseinstance, customWidgets)
-    ui_file = QFile(ui_path)
+    ui_file = QFile(str(ui_path))
     # Set the working directory to the ui file's directory so that relative paths in the UI file work
     loader.setWorkingDirectory(QDir(str(Path(ui_path).parent)))
     ui_file.open(QFile.ReadOnly)

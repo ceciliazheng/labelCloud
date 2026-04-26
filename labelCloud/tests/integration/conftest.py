@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Tuple
 
 import pytest
-from PyQt5 import QtCore
+from PySide6 import QtCore
 
 from labelCloud.control.config_manager import config
 from labelCloud.control.controller import Controller
@@ -17,11 +17,23 @@ from labelCloud.view.startup.dialog import StartupDialog
 
 def pytest_configure(config):
     os.chdir("../labelCloud")
+    os.environ["NO_AT_BRIDGE"] = "1"
+    os.environ["QT_LINUX_ACCESSIBILITY_ALWAYS_ON"] = "0"
+    os.environ["QT_LOGGING_RULES"] = (
+        "qt.accessibility.atspi=false;qt.accessibility.cache=false"
+    )
+
+    from PySide6.QtCore import QCoreApplication, Qt
+    from PySide6.QtQuick import QQuickWindow, QSGRendererInterface
+
+    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
+    QQuickWindow.setGraphicsApi(QSGRendererInterface.OpenGLRhi)
+
     logging.info(f"Set working directory to {os.getcwd()}.")
 
 
 @pytest.fixture
-def startup_pyqt(qtbot, qapp, monkeypatch):
+def startup_qt(qtbot, qapp, monkeypatch):
     # Backup label
     pathToLabel = config.getpath("FILE", "label_folder") / "exemplary.json"
     pathToBackup = Path().cwd() / pathToLabel.name

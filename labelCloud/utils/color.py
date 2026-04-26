@@ -3,7 +3,7 @@ from typing import List
 
 import numpy as np
 import numpy.typing as npt
-import pkg_resources
+import importlib_resources
 
 from ..definitions.types import Color3f
 
@@ -36,7 +36,7 @@ def colorize_points_with_height(
     points: np.ndarray, z_min: float, z_max: float
 ) -> npt.NDArray[np.float32]:
     palette = np.loadtxt(
-        pkg_resources.resource_filename("labelCloud.resources", "rocket-palette.txt")
+        importlib_resources.files("labelCloud.resources").joinpath("rocket-palette.txt")
     )
     palette_len = len(palette) - 1
 
