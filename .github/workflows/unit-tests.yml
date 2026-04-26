@@ -19,13 +19,19 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Install Qt system dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libegl1 libgl1-mesa-dev libxkbcommon-x11-0
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        pip install -r requirements.txt
+        python -m pip install -r requirements.txt
 
     - name: Check black formatting
-      uses: psf/black@stable
+      run: black --check .
 
     - name: Lint with mypy
       if: ${{ matrix.python-version == '3.9' }}  # only lint last Python version
@@ -33,5 +39,8 @@ jobs:
         mypy labelCloud/.
 
     - name: Test with pytest
+      env:
+        PYTEST_QT_API: pyside6
+        QT_QPA_PLATFORM: offscreen
       run: |
         python -m pytest labelCloud/tests/unit/

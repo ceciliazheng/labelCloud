@@ -29,7 +29,7 @@ def setup_example_project() -> None:
     import shutil
     from pathlib import Path
 
-    import pkg_resources
+    import importlib_resources
 
     from labelCloud.control.config_manager import config
 
@@ -47,24 +47,28 @@ def setup_example_project() -> None:
 
     # Copy example files
     shutil.copy(
-        pkg_resources.resource_filename("labelCloud.resources", "default_config.ini"),
-        str(cwdir.joinpath("config.ini")),
-    )
-    shutil.copy(
-        pkg_resources.resource_filename(
-            "labelCloud.resources.examples", "exemplary.ply"
+        importlib_resources.files("labelCloud.resources").joinpath(
+            "default_config.ini"
         ),
-        str(pcd_folder.joinpath("exemplary.ply")),
+        cwdir.joinpath("config.ini"),
     )
     shutil.copy(
-        pkg_resources.resource_filename("labelCloud.resources", "default_classes.json"),
-        str(label_folder.joinpath("_classes.json")),
-    )
-    shutil.copy(
-        pkg_resources.resource_filename(
-            "labelCloud.resources.examples", "exemplary.json"
+        importlib_resources.files("labelCloud.resources.examples").joinpath(
+            "exemplary.ply"
         ),
-        str(label_folder.joinpath("exemplary.json")),
+        pcd_folder.joinpath("exemplary.ply"),
+    )
+    shutil.copy(
+        importlib_resources.files("labelCloud.resources").joinpath(
+            "default_classes.json"
+        ),
+        label_folder.joinpath("_classes.json"),
+    )
+    shutil.copy(
+        importlib_resources.files("labelCloud.resources.examples").joinpath(
+            "exemplary.json"
+        ),
+        label_folder.joinpath("exemplary.json"),
     )
     logging.info(
         f"Setup example project in {cwdir}:"
@@ -75,9 +79,23 @@ def setup_example_project() -> None:
 
 
 def start_gui():
+    import os
     import sys
 
-    from PyQt5.QtWidgets import QApplication, QDesktopWidget
+    # Suppress Qt accessibility warnings on Linux
+    os.environ["NO_AT_BRIDGE"] = "1"
+    os.environ["QT_LINUX_ACCESSIBILITY_ALWAYS_ON"] = "0"
+    os.environ["QT_LOGGING_RULES"] = (
+        "qt.accessibility.atspi=false;qt.accessibility.cache=false"
+    )
+
+    from PySide6.QtCore import QCoreApplication, Qt
+    from PySide6.QtQuick import QQuickWindow, QSGRendererInterface
+    from PySide6.QtWidgets import QApplication
+
+    # Suppress WebEngine warning initialized from plugin
+    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
+    QQuickWindow.setGraphicsApi(QSGRendererInterface.OpenGLRhi)
 
     from labelCloud.control.controller import Controller
     from labelCloud.view.gui import GUI
@@ -95,13 +113,13 @@ def start_gui():
     view.show()
 
     app.setStyle("Fusion")
-    desktop = QDesktopWidget().availableGeometry()
-    width = (desktop.width() - view.width()) // 2
-    height = (desktop.height() - view.height()) // 2
+    screen = QApplication.primaryScreen().availableGeometry()
+    width = (screen.width() - view.width()) // 2
+    height = (screen.height() - view.height()) // 2
     view.move(width, height)
 
     logging.info("Showing GUI...")
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

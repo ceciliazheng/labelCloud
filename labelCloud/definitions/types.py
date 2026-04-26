@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from PyQt5.QtGui import QColor
+from PySide6.QtGui import QColor
 
 Point2D = Tuple[float, float]
 Point3D = Tuple[float, float, float]

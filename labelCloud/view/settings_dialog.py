@@ -3,22 +3,22 @@
 import logging
 from pathlib import Path
 
-import pkg_resources
-from PyQt5 import uic
-from PyQt5.QtWidgets import QDialog
+import importlib_resources
+from PySide6.QtWidgets import QDialog
 
 from ..control.config_manager import config, config_manager
 from ..control.label_manager import LabelManager
 from ..io.labels.config import LabelConfig
+from ..utils.qt_loader import loadUi
 
 
 class SettingsDialog(QDialog):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.parent_gui = parent
-        uic.loadUi(
-            pkg_resources.resource_filename(
-                "labelCloud.resources.interfaces", "settings_interface.ui"
+        loadUi(
+            importlib_resources.files("labelCloud.resources.interfaces").joinpath(
+                "settings_interface.ui"
             ),
             self,
         )

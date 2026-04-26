@@ -1,5 +1,5 @@
-from PyQt5 import QtGui, QtWidgets
-from PyQt5.QtCore import Qt, pyqtSignal
+from PySide6 import QtGui, QtWidgets
+from PySide6.QtCore import Qt, Signal
 
 
 class ColorButton(QtWidgets.QPushButton):
@@ -12,7 +12,7 @@ class ColorButton(QtWidgets.QPushButton):
     Source: https://www.pythonguis.com/widgets/qcolorbutton-a-color-selector-tool-for-pyqt/
     """
 
-    colorChanged = pyqtSignal(object)
+    colorChanged = Signal(object)
 
     def __init__(self, *args, color="#FF0000", **kwargs):
         super(ColorButton, self).__init__(*args, **kwargs)
@@ -48,7 +48,7 @@ class ColorButton(QtWidgets.QPushButton):
         if self._color:
             dlg.setCurrentColor(QtGui.QColor(self._color))
 
-        if dlg.exec_():
+        if dlg.exec():
             self.setColor(dlg.currentColor().name())
 
     def mousePressEvent(self, e):

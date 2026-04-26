@@ -71,6 +71,7 @@ class BBox(object):
         return self.classname
 
     def get_vertices(self) -> npt.NDArray:
+        self.set_axis_aligned_verticies()
         rotated_vertices = math3d.rotate_bbox_around_center(
             self.get_axis_aligned_vertices(),
             self.center,

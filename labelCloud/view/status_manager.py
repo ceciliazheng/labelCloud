@@ -1,6 +1,6 @@
 from typing import Optional
 
-from PyQt5 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets
 
 from ..definitions import Context, Mode
 
@@ -14,13 +14,13 @@ class StatusManager:
         self.mode_label.setStyleSheet(
             "font-weight: bold; font-size: 14px; min-width: 275px;"
         )
-        self.mode_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.mode_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.status_bar.addWidget(self.mode_label, stretch=0)
 
         # Add temporary status message / tips
         self.message_label = QtWidgets.QLabel()
         self.message_label.setStyleSheet("font-size: 14px;")
-        self.message_label.setAlignment(QtCore.Qt.AlignLeft)
+        self.message_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
         self.status_bar.addWidget(self.message_label, stretch=1)
 
         self.msg_context = Context.DEFAULT

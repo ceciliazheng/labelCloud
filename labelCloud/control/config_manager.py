@@ -4,7 +4,7 @@ import configparser
 from pathlib import Path
 from typing import List, Union
 
-import pkg_resources
+import importlib_resources
 
 
 class ExtendedConfigParser(configparser.ConfigParser):
@@ -33,7 +33,7 @@ class ExtendedConfigParser(configparser.ConfigParser):
 class ConfigManager(object):
     PATH_TO_CONFIG = Path.cwd().joinpath("config.ini")
     PATH_TO_DEFAULT_CONFIG = Path(
-        pkg_resources.resource_filename("labelCloud.resources", "default_config.ini")
+        importlib_resources.files("labelCloud.resources").joinpath("default_config.ini")
     )
 
     def __init__(self) -> None:

@@ -114,18 +114,20 @@ def draw_xy_plane(pcd: "PointCloud") -> None:
 # RAY PICKING
 
 
-def get_pick_ray(x: float, y: float, modelview, projection) -> Tuple[Point3D, Point3D]:
+def get_pick_ray(
+    x: float, y: float, modelview, projection, viewport
+) -> Tuple[Point3D, Point3D]:
     """
     :param x: rightward screen coordinate
     :param y: downward screen coordinate
     :param modelview: modelview matrix
     :param projection: projection matrix
+    :param viewport: viewport array
     :return: two points of the pick ray from the closest and furthest frustum
     """
     x *= DEVICE_PIXEL_RATIO  # type: ignore
     y *= DEVICE_PIXEL_RATIO  # type: ignore
 
-    viewport = GL.glGetIntegerv(GL.GL_VIEWPORT)
     real_y = viewport[3] - y  # adjust for down-facing y positions
 
     # Unproject screen coords into world coordsdd
@@ -135,7 +137,7 @@ def get_pick_ray(x: float, y: float, modelview, projection) -> Tuple[Point3D, Po
 
 
 def get_intersected_bboxes(
-    x: float, y: float, bboxes: List["BBox"], modelview, projection
+    x: float, y: float, bboxes: List["BBox"], modelview, projection, viewport
 ) -> Union[int, None]:
     """Checks if the picking ray intersects any bounding box from bboxes.
 
@@ -144,15 +146,20 @@ def get_intersected_bboxes(
     :param bboxes: list of bounding boxes
     :param modelview: modelview matrix
     :param projection: projection matrix
+    :param viewport: viewport array
     :return: Id of the intersected bounding box or None if no bounding box is intersected
     """
     intersected_bboxes = {}  # bbox_index: bbox
     for index, bbox in enumerate(bboxes):
-        intersection_point, _ = get_intersected_sides(x, y, bbox, modelview, projection)
+        intersection_point, _ = get_intersected_sides(
+            x, y, bbox, modelview, projection, viewport
+        )
         if intersection_point is not None:
             intersected_bboxes[index] = intersection_point[2]
 
-    p0, p1 = get_pick_ray(x, y, modelview, projection)  # Calculate picking ray
+    p0, p1 = get_pick_ray(
+        x, y, modelview, projection, viewport
+    )  # Calculate picking ray
     if intersected_bboxes and (
         p0[2] >= p1[2]
     ):  # Calculate which intersected bbox is closer to screen
@@ -164,7 +171,7 @@ def get_intersected_bboxes(
 
 
 def get_intersected_sides(
-    x: float, y: float, bbox: "BBox", modelview, projection
+    x: float, y: float, bbox: "BBox", modelview, projection, viewport
 ) -> Union[Tuple[List[int], str], Tuple[None, None]]:
     """Checks if and with which side of the given bounding box the picking ray intersects.
 
@@ -173,9 +180,12 @@ def get_intersected_sides(
     :param bbox: bounding box to check for intersection
     :param modelview: modelview matrix
     :param projection: projection matrix
+    :param viewport: viewport array
     :return: intersection point, name of intersected side [top, bottom, right, back, left, front]
     """
-    p0, p1 = get_pick_ray(x, y, modelview, projection)  # Calculate picking ray
+    p0, p1 = get_pick_ray(
+        x, y, modelview, projection, viewport
+    )  # Calculate picking ray
     vertices = bbox.get_vertices()
 
     intersections: List[Tuple[list, str]] = (

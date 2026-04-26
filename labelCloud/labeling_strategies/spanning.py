@@ -61,6 +61,14 @@ class SpanningStrategy(BaseLabelingStrategy):
             )
         elif not self.point_3:
             self.point_3 = new_point
+            # Calculate dir_vector here to avoid reliance on draw_preview
+            self.dir_vector, _ = math3d.get_line_perpendicular(
+                self.point_1, self.point_2, self.point_3
+            )
+            assert self.dir_vector is not None
+            self.p1_w = cast(Point3D, np.add(self.point_1, self.dir_vector))
+            self.p2_w = cast(Point3D, np.add(self.point_2, self.dir_vector))
+
             self.view.status_manager.set_message(
                 "Select any point for the height of the bounding box."
             )

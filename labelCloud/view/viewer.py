@@ -6,7 +6,8 @@ import numpy as np
 import numpy.typing as npt
 import OpenGL.GL as GL
 from OpenGL import GLU
-from PyQt5 import QtGui, QtOpenGL
+from PySide6 import QtGui
+from PySide6.QtOpenGLWidgets import QOpenGLWidget
 
 from ..control.alignmode import AlignMode
 from ..control.bbox_controller import BoundingBoxController
@@ -27,18 +28,19 @@ def ignore_depth_mask():
 
 
 # Main widget for presenting the point cloud
-class GLWidget(QtOpenGL.QGLWidget):
+class GLWidget(QOpenGLWidget):
     NEAR_PLANE = config.getfloat("USER_INTERFACE", "near_plane")
     FAR_PLANE = config.getfloat("USER_INTERFACE", "far_plane")
 
     def __init__(self, parent=None) -> None:
-        QtOpenGL.QGLWidget.__init__(self, parent)
+        super().__init__(parent)
         self.setMouseTracking(
             True
         )  # mouseMoveEvent is called also without button pressed
 
-        self.modelview: Optional[npt.NDArray] = None
-        self.projection: Optional[npt.NDArray] = None
+        self.modelview: npt.NDArray = np.eye(4)
+        self.projection: npt.NDArray = np.eye(4)
+        self.viewport: npt.NDArray = np.zeros(4, dtype=int)
         self.DEVICE_PIXEL_RATIO: float = (
             self.devicePixelRatioF()
         )  # 1 = normal; 2 = retina display
@@ -62,14 +64,14 @@ class GLWidget(QtOpenGL.QGLWidget):
     def set_bbox_controller(self, bbox_controller: BoundingBoxController) -> None:
         self.bbox_controller = bbox_controller
 
-    # QGLWIDGET METHODS
+    # QOPENGLWIDGET METHODS
 
     def initializeGL(self) -> None:
         bg_color = [
             int(fl_color)
             for fl_color in config.getlist("USER_INTERFACE", "BACKGROUND_COLOR")
         ]  # floats to ints
-        self.qglClearColor(QtGui.QColor(*bg_color))  # screen background color
+        GL.glClearColor(*(c / 255.0 for c in bg_color), 1.0)  # screen background color
         GL.glEnable(GL.GL_DEPTH_TEST)  # for visualization of depth
         GL.glEnable(GL.GL_BLEND)  # enable transparency
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
@@ -80,6 +82,8 @@ class GLWidget(QtOpenGL.QGLWidget):
 
     def resizeGL(self, width, height) -> None:
         logging.info("Resized widget.")
+        self.DEVICE_PIXEL_RATIO = self.devicePixelRatioF()
+        oglhelper.DEVICE_PIXEL_RATIO = self.DEVICE_PIXEL_RATIO
         GL.glViewport(0, 0, width, height)
         GL.glMatrixMode(GL.GL_PROJECTION)
         GL.glLoadIdentity()
@@ -98,6 +102,7 @@ class GLWidget(QtOpenGL.QGLWidget):
         # Get actual matrices for click unprojection
         self.modelview = GL.glGetDoublev(GL.GL_MODELVIEW_MATRIX)
         self.projection = GL.glGetDoublev(GL.GL_PROJECTION_MATRIX)
+        self.viewport = GL.glGetIntegerv(GL.GL_VIEWPORT)
 
         with ignore_depth_mask():  # Do not write decoration and preview elements in depth buffer
             if config.getboolean("USER_INTERFACE", "show_floor"):
@@ -137,6 +142,7 @@ class GLWidget(QtOpenGL.QGLWidget):
     def get_world_coords(
         self, x: float, y: float, z: Optional[float] = None, correction: bool = False
     ) -> Tuple[float, float, float]:
+        self.makeCurrent()
         x *= self.DEVICE_PIXEL_RATIO  # For fixing mac retina bug
         y *= self.DEVICE_PIXEL_RATIO
 
